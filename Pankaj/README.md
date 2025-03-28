@@ -22,3 +22,5 @@ results will be stored in `out.txt` The output i got for above command is :
 (-48.25, 33.63), (-51.45, 33.35), (-48.55, 33.35)
 0.106879, 0.0150289, 0.12482
 ```
+## global minima and maxima verified from csv.
+![Alt text](assets/csv_results.png)

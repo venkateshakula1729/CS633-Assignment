@@ -116,7 +116,6 @@ int main(int argc, char **argv) {
     char outputFile[100];
     strcpy(outputFile, argv[9]);
 
-    // Validate process grid
     if (pX * pY * pZ != size) {
         if (cur_rank == 0) {
             printf("Error: pX*pY*pZ (%d) must equal the total number of processes (%d)\n", pX*pY*pZ, size);

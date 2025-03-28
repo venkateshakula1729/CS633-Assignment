@@ -140,15 +140,14 @@ int main(int argc, char **argv) {
             }
         }
         fclose(fp);
-        // For debugging - print first few values
-        printf("First point, all timesteps: ");
-        for(int t = 0; t < timeSteps; t++) {
-            printf("%lf ", globalData[t]);
-        }
-        printf("\n");
+        // // For debugging - print first few values
+        // printf("First point, all timesteps: ");
+        // for(int t = 0; t < timeSteps; t++) {
+        //     printf("%lf ", globalData[t]);
+        // }
+        // printf("\n");
     }
 
-    // Record read time
     float time2 = MPI_Wtime();
 
     // sub domain position.
@@ -243,11 +242,9 @@ int main(int argc, char **argv) {
             free(tempBuffer);
         }
     } else {
-        // Other processes receive their portion of data
         MPI_Recv(localData, localDataSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    // Free global data as it's no longer needed
     if (cur_rank == 0 && globalData) {
         free(globalData);
     }
@@ -255,7 +252,6 @@ int main(int argc, char **argv) {
     // Start main code timing
     double time3 = MPI_Wtime();
 
-    // Arrays to track results
     int *localMinimaCount = (int *)calloc(timeSteps, sizeof(int));
     int *localMaximaCount = (int *)calloc(timeSteps, sizeof(int));
     double *subDomainMinValues = (double *)malloc(timeSteps * sizeof(double));
@@ -266,7 +262,6 @@ int main(int argc, char **argv) {
         subDomainMaxValues[t] = -DBL_MAX;
     }
 
-    // Process local data to find minima, maxima, and extreme values
     for(int t = 0; t < timeSteps; t++) {
         int localMinimaCount_at_t = 0;
         int localMaximaCount_at_t = 0;
@@ -293,7 +288,6 @@ int main(int argc, char **argv) {
         localMaximaCount[t] = localMaximaCount_at_t;
     }
 
-    // Gather results from all processes
     int *globalMinimaCount = NULL;
     int *globalMaximaCount = NULL;
     double *globalMinValues = NULL;
@@ -306,28 +300,23 @@ int main(int argc, char **argv) {
         globalMaxValues = (double *)malloc(timeSteps * sizeof(double));
     }
 
-    // Sum up local minima/maxima counts
     MPI_Reduce(localMinimaCount, globalMinimaCount, timeSteps, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(localMaximaCount, globalMaximaCount, timeSteps, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    // Find global min/max values
     MPI_Reduce(subDomainMinValues, globalMinValues, timeSteps, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Reduce(subDomainMaxValues, globalMaxValues, timeSteps, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     // End main code timing
     double time4 = MPI_Wtime();
 
-    // Calculate timing information
     TimingInfo timing;
     timing.readTime = time2 - time1;
     timing.mainCodeTime = time4 - time3;
     timing.totalTime = time4 - time1;
 
-    // Find maximum timing across all processes
     TimingInfo maxTiming;
     MPI_Reduce(&timing, &maxTiming, 3, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
-    // Write output file (only rank 0)
     if (cur_rank == 0) {
         FILE *fp = fopen(outputFile, "w");
         if (fp == NULL) {
@@ -335,7 +324,6 @@ int main(int argc, char **argv) {
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
-        // Write local minima and maxima counts for each time step
         for (int t = 0; t < timeSteps; t++) {
             fprintf(fp, "(%d, %d)", globalMinimaCount[t], globalMaximaCount[t]);
             if (t < timeSteps - 1) {
@@ -344,7 +332,6 @@ int main(int argc, char **argv) {
         }
         fprintf(fp, "\n");
 
-        // Write global minimum and maximum values for each time step
         for (int t = 0; t < timeSteps; t++) {
             fprintf(fp, "(%g, %g)", globalMinValues[t], globalMaxValues[t]);
             if (t < timeSteps - 1) {
@@ -353,20 +340,17 @@ int main(int argc, char **argv) {
         }
         fprintf(fp, "\n");
 
-        // Write timing information
         fprintf(fp, "%g, %g, %g\n", maxTiming.readTime, maxTiming.mainCodeTime, maxTiming.totalTime);
 
         fclose(fp);
         printf("Output written to %s\n", outputFile);
 
-        // Free allocated memory
         free(globalMinimaCount);
         free(globalMaximaCount);
         free(globalMinValues);
         free(globalMaxValues);
     }
 
-    // Free local memory
     free(localData);
     free(localMinimaCount);
     free(localMaximaCount);

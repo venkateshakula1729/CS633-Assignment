@@ -18,77 +18,77 @@ int threeD_To_oneD(int x, int y, int z, int width, int height, int depth) {
     return ((z * height + y) * width + x);
 }
 
-bool checkLocalMinima(double* data, int x, int y, int z, int width, int height, int depth) {
+bool checkLocalMinima(double* data, int x, int y, int z, int width, int height, int depth, int time, int timesteps) {
 
     int idx = threeD_To_oneD(x, y, z, width, height, depth);
-    double val = data[idx];
+    double val = data[(idx * timesteps) + time];
     bool isMinima = true;
 
     // Check left neighbor
-    if (x > 0 && data[idx - 1] < val) {
+    if (x > 0 && data[(idx - 1) * timesteps + time] < val) {
         isMinima = false;
     }
 
     // Check right neighbor
-    if (x < width - 1 && data[idx + 1] < val) {
+    if (x < width - 1 && data[(idx + 1) * timesteps + time] < val) {
         isMinima = false;
     }
 
     // Check top neighbor
-    if (y > 0 && data[idx - width] < val) {
+    if (y > 0 && data[(idx - width) * timesteps + time] < val) {
         isMinima = false;
     }
 
     // Check bottom neighbor
-    if (y < height - 1 && data[idx + width] < val) {
+    if (y < height - 1 && data[(idx + width) * timesteps + time] < val) {
         isMinima = false;
     }
 
     // Check front neighbor
-    if (z > 0 && data[idx - height * width] < val) {
+    if (z > 0 && data[(idx - height * width) * timesteps + time] < val) {
         isMinima = false;
     }
 
     // Check back neighbor
-    if (z < depth - 1 && data[idx + height * width] < val) {
+    if (z < depth - 1 && data[(idx + height * width) * timesteps + time] < val) {
         isMinima = false;
     }
 
     return isMinima;
 }
 
-bool checkLocalMaxima(double* data, int x, int y, int z, int width, int height, int depth) {
+bool checkLocalMaxima(double* data, int x, int y, int z, int width, int height, int depth, int time, int timesteps) {
     int idx = threeD_To_oneD(x, y, z, width, height, depth);
-    double val = data[idx];
+    double val = data[(idx * timesteps) + time];
     bool isMaxima = true;
 
     // Check left neighbor
-    if (x > 0 && data[idx - 1] > val) {
+    if (x > 0 && data[(idx - 1) * timesteps + time] > val) {
         isMaxima = false;
     }
 
     // Check right neighbor
-    if (x < width - 1 && data[idx + 1] > val) {
+    if (x < width - 1 && data[(idx + 1) * timesteps + time] > val) {
         isMaxima = false;
     }
 
     // Check top neighbor
-    if (y > 0 && data[idx - width] > val) {
+    if (y > 0 && data[(idx - width) * timesteps + time] > val) {
         isMaxima = false;
     }
 
     // Check bottom neighbor
-    if (y < height - 1 && data[idx + width] > val) {
+    if (y < height - 1 && data[(idx + width) * timesteps + time] > val) {
         isMaxima = false;
     }
 
     // Check front neighbor
-    if (z > 0 && data[idx - height * width] > val) {
+    if (z > 0 && data[(idx - height * width) * timesteps + time] > val) {
         isMaxima = false;
     }
 
     // Check back neighbor
-    if (z < depth - 1 && data[idx + height * width] > val) {
+    if (z < depth - 1 && data[(idx + height * width) * timesteps + time] > val) {
         isMaxima = false;
     }
 
@@ -115,6 +115,15 @@ int main(int argc, char **argv) {
     int timeSteps = atoi(argv[8]);
     char outputFile[100];
     strcpy(outputFile, argv[9]);
+
+    // if(cur_rank == 0)
+    // {
+    // printf("Input File: %s\n", inputFile);
+    // printf("Particle Position: (%d, %d, %d)\n", pX, pY, pZ);
+    // printf("Grid Dimensions: (%d, %d, %d)\n", nX, nY, nZ);
+    // printf("Time Steps: %d\n", timeSteps);
+    // printf("Output File: %s\n", outputFile);
+    // }
 
     if (pX * pY * pZ != size) {
         if (cur_rank == 0) {
@@ -272,12 +281,12 @@ int main(int argc, char **argv) {
                         int height = tempEndY + 1 - tempStartY;
                         int depth = tempEndZ + 1 - tempStartZ;
                         int idx = threeD_To_oneD(x, y, z, width, height, depth);
-                        double val = localData[idx];
+                        double val = localData[idx * timeSteps + t];
                         if(val < subDomainMinValues[t]) subDomainMinValues[t] = val;
                         if(val > subDomainMaxValues[t]) subDomainMaxValues[t] = val;
 
-                        if(checkLocalMinima(localData,x,y,z,width, height, depth)) localMinimaCount_at_t++;
-                        if(checkLocalMaxima(localData,x,y,z,width, height, depth)) localMaximaCount_at_t++;
+                        if(checkLocalMinima(localData,x,y,z,width, height, depth, t, timeSteps)) localMinimaCount_at_t++;
+                        if(checkLocalMaxima(localData,x,y,z,width, height, depth, t, timeSteps)) localMaximaCount_at_t++;
 
                     }
                 }
@@ -285,7 +294,20 @@ int main(int argc, char **argv) {
         }
         localMinimaCount[t] = localMinimaCount_at_t;
         localMaximaCount[t] = localMaximaCount_at_t;
+
+        // if(cur_rank == 0){
+        //     printf("Local Minima Count for rank 0 at %d: %d\n", t, localMinimaCount[t]);
+        //     printf("Local Maxima Count for rank 0 at %d: %d\n", t, localMaximaCount[t]);
+        //     printf("SubDomainMin for rank 0 at %d: %lf\n", t, subDomainMinValues[t]);
+        //     printf("SubDomainMax for rank 0 at %d: %lf\n", t, subDomainMaxValues[t]);
+        // }
     }
+
+    // if(cur_rank == 0){
+    //     for(int i = 32; i < 33; i++){
+    //         printf("local data at i:%d is %lf\n", i, localData[i]);
+    //     }
+    // }
 
     int *globalMinimaCount = NULL;
     int *globalMaximaCount = NULL;
@@ -304,6 +326,32 @@ int main(int argc, char **argv) {
 
     MPI_Reduce(subDomainMinValues, globalMinValues, timeSteps, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Reduce(subDomainMaxValues, globalMaxValues, timeSteps, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+    // if(cur_rank == 0){
+    //     printf("Global minima count: ");
+    //     for (int t = 0; t < timeSteps; t++) {
+    //         printf("%d ", globalMinimaCount[t]);
+    //     }
+    //     printf("\n");
+
+    //     printf("Global maxima count: ");
+    //     for (int t = 0; t < timeSteps; t++) {
+    //         printf("%d ", globalMaximaCount[t]);
+    //     }
+    //     printf("\n");
+
+    //     printf("Global min values: ");
+    //     for (int t = 0; t < timeSteps; t++) {
+    //         printf("%f ", globalMinValues[t]);
+    //     }
+    //     printf("\n");
+
+    //     printf("Global max values: ");
+    //     for (int t = 0; t < timeSteps; t++) {
+    //         printf("%f ", globalMaxValues[t]);
+    //     }
+    //     printf("\n");
+    // }
 
     // End main code timing
     double time4 = MPI_Wtime();

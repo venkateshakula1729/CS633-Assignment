@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
         // printf("\n");
     }
 
-    float time2 = MPI_Wtime();
+    double time2 = MPI_Wtime();
 
     // sub domain position.
     int subDomainZ = cur_rank / (pX * pY);
@@ -235,9 +235,9 @@ int main(int argc, char **argv) {
             }
 
             int bufIdx = 0;
-            for (int z = pStartZ; z < pStartZ + subDomainSizeZ; z++) {
-                for (int y = pStartY; y < pStartY + subDomainSizeY; y++) {
-                    for (int x = pStartX; x < pStartX + subDomainSizeX; x++) {
+            for (int z = tempPStartZ; z <= tempPEndZ; z++) {
+                for (int y = tempPStartY; y <= tempPEndY; y++) {
+                    for (int x = tempPStartX; x <= tempPEndX; x++) {
                         int globalIdx = threeD_To_oneD(x, y, z, nX, nY, nZ) * timeSteps;
                         for (int t = 0; t < timeSteps; t++) {
                             tempBuffer[bufIdx++] = globalData[globalIdx + t];
@@ -285,9 +285,14 @@ int main(int argc, char **argv) {
                         if(val < subDomainMinValues[t]) subDomainMinValues[t] = val;
                         if(val > subDomainMaxValues[t]) subDomainMaxValues[t] = val;
 
-                        if(checkLocalMinima(localData,x,y,z,width, height, depth, t, timeSteps)) localMinimaCount_at_t++;
-                        if(checkLocalMaxima(localData,x,y,z,width, height, depth, t, timeSteps)) localMaximaCount_at_t++;
-
+                        if(checkLocalMinima(localData,x,y,z,width, height, depth, t, timeSteps)) {
+                            localMinimaCount_at_t++;
+                            // printf("Local Minima at (%d, %d, %d) at time %d\n", x, y, z, t);
+                        }
+                        if(checkLocalMaxima(localData,x,y,z,width, height, depth, t, timeSteps)) {
+                            localMaximaCount_at_t++;
+                            // printf("Local Maxima at (%d, %d, %d) at time %d\n", x, y, z, t);
+                        }
                     }
                 }
             }
@@ -357,7 +362,7 @@ int main(int argc, char **argv) {
     double time4 = MPI_Wtime();
 
     TimingInfo timing;
-    timing.readTime = time2 - time1;
+    timing.readTime = time3 - time1;
     timing.mainCodeTime = time4 - time3;
     timing.totalTime = time4 - time1;
 

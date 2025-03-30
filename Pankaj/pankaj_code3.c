@@ -235,9 +235,9 @@ int main(int argc, char **argv) {
             }
 
             int bufIdx = 0;
-            for (int z = pStartZ; z < pStartZ + subDomainSizeZ; z++) {
-                for (int y = pStartY; y < pStartY + subDomainSizeY; y++) {
-                    for (int x = pStartX; x < pStartX + subDomainSizeX; x++) {
+            for (int z = tempPStartZ; z <= tempPEndZ; z++) {
+                for (int y = tempPStartY; y <= tempPEndY; y++) {
+                    for (int x = tempPStartX; x <= tempPEndX; x++) {
                         int globalIdx = threeD_To_oneD(x, y, z, nX, nY, nZ) * timeSteps;
                         for (int t = 0; t < timeSteps; t++) {
                             tempBuffer[bufIdx++] = globalData[globalIdx + t];
@@ -272,6 +272,7 @@ int main(int argc, char **argv) {
 
     int width = tempEndX + 1 - tempStartX;
     int height = tempEndY + 1 - tempStartY;
+
     int depth = tempEndZ + 1 - tempStartZ;
     for(int t = 0; t < timeSteps; t++) {
         int localMinimaCount_at_t = 0;

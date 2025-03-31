@@ -14,8 +14,8 @@ br1 = np.arange(len(df['Metric']))
 br2 = [x + barWidth for x in br1]
 
 # Create bars
-ax.bar(br1, df['Original'], width=barWidth, label='Original [code4]', color='blue', alpha=0.7)
-ax.bar(br2, df['Optimized'], width=barWidth, label='`memcpy` to copy entire row [code9]', color='green', alpha=0.7)
+ax.bar(br1, df['Original'], width=barWidth, label='MPI_Send [code7]', color='blue', alpha=0.7)
+ax.bar(br2, df['Optimized'], width=barWidth, label='MPI_Isend [code11]', color='green', alpha=0.7)
 
 # Set y-axis range from 0 to 1 as requested
 ax.set_ylim(0, 1)
@@ -32,7 +32,7 @@ for i, metric in enumerate(df['Metric']):
 # Add labels and title
 ax.set_xlabel('Performance Metric', fontweight='bold')
 ax.set_ylabel('Time (seconds)', fontweight='bold')
-ax.set_title('Performance Comparison [20 iter]: Original [code7] vs. `memcpy` to copy entire row  [code9]', fontweight='bold')
+ax.set_title('Performance Comparison [20 iter]: MPI_Send [code7] vs. MPI_Isend [code11]', fontweight='bold')
 ax.set_xticks([r + barWidth/2 for r in range(len(df['Metric']))])
 ax.set_xticklabels(df['Metric'])
 

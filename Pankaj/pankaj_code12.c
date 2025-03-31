@@ -211,7 +211,7 @@ double* readInputData(const char* inputFile, int totalDomainSize, int timeSteps)
     return data;
 }
 
-// Optimized data distribution with MPI_Bsend - simplified approach
+// Distribute data from root to all processes using non-blocking sends
 double* distributeData(int rank, const SubDomain* subdomain, double* globalData,
                       int nX, int nY, int nZ, int timeSteps, int pX, int pY, int pZ) {
     int localDataSize = subdomain->tempWidth * subdomain->tempHeight *
@@ -228,84 +228,79 @@ double* distributeData(int rank, const SubDomain* subdomain, double* globalData,
         int idx = 0;
         for (int z = subdomain->tempStartZ; z <= subdomain->tempEndZ; z++) {
             for (int y = subdomain->tempStartY; y <= subdomain->tempEndY; y++) {
-                int globalRowStart = getLinearIndex(subdomain->tempStartX, y, z, nX, nY, nZ) * timeSteps;
-                int rowSize = subdomain->tempWidth * timeSteps;
-                memcpy(&localData[idx], &globalData[globalRowStart], rowSize * sizeof(double));
-                idx += rowSize;
+                for (int x = subdomain->tempStartX; x <= subdomain->tempEndX; x++) {
+                    int globalIdx = getLinearIndex(x, y, z, nX, nY, nZ) * timeSteps;
+                    for (int t = 0; t < timeSteps; t++) {
+                        localData[idx++] = globalData[globalIdx + t];
+                    }
+                }
             }
         }
 
-        // Calculate total buffer size needed for all MPI_Bsend operations
-        int totalBufferSize = 0;
-        int numProcs = pX * pY * pZ;
+        // Prepare data for other processes using non-blocking sends
+        int numProcs = pX * pY * pZ - 1; // Exclude root process
+        MPI_Request* requests = (MPI_Request*)malloc(numProcs * sizeof(MPI_Request));
+        double** sendBuffers = (double**)malloc(numProcs * sizeof(double*));
 
-        for (int p = 1; p < numProcs; p++) {
-            SubDomain recvSubdomain;
-            calculateSubDomainBoundaries(p, pX, pY, pZ, nX, nY, nZ, &recvSubdomain);
-            int sendDataSize = recvSubdomain.tempWidth * recvSubdomain.tempHeight *
-                             recvSubdomain.tempDepth * timeSteps;
-            totalBufferSize += sendDataSize * sizeof(double) + MPI_BSEND_OVERHEAD;
-        }
-
-        // Add extra buffer space to be safe
-        totalBufferSize += 1024 * 1024;  // Add 1MB of extra space
-
-        // Allocate and attach buffer
-        void* bsendBuffer = malloc(totalBufferSize);
-        if (!bsendBuffer) {
-            printf("Rank 0: Failed to allocate bsend buffer\n");
+        if (!requests || !sendBuffers) {
+            printf("Rank 0: Failed to allocate memory for requests or buffers\n");
             free(localData);
+            if (requests) free(requests);
+            if (sendBuffers) free(sendBuffers);
             return NULL;
         }
 
-        MPI_Buffer_attach(bsendBuffer, totalBufferSize);
-
-        // Send data to each process
-        for (int p = 1; p < numProcs; p++) {
+        int reqIdx = 0;
+        for (int p = 1; p < pX * pY * pZ; p++, reqIdx++) {
             SubDomain recvSubdomain;
             calculateSubDomainBoundaries(p, pX, pY, pZ, nX, nY, nZ, &recvSubdomain);
 
             int sendDataSize = recvSubdomain.tempWidth * recvSubdomain.tempHeight *
-                             recvSubdomain.tempDepth * timeSteps;
+                              recvSubdomain.tempDepth * timeSteps;
 
-            // Allocate a temporary buffer for the data to send
-            double* tempBuf = (double*)malloc(sendDataSize * sizeof(double));
-            if (!tempBuf) {
+            sendBuffers[reqIdx] = (double*)malloc(sendDataSize * sizeof(double));
+            if (!sendBuffers[reqIdx]) {
                 printf("Rank 0: Failed to allocate temp buffer for process %d\n", p);
-                void* buf; int size;
-                MPI_Buffer_detach(&buf, &size);
-                free(buf);
+
+                // Free already allocated buffers
+                for (int j = 0; j < reqIdx; j++) {
+                    free(sendBuffers[j]);
+                }
+                free(sendBuffers);
+                free(requests);
                 free(localData);
                 return NULL;
             }
 
-            // Copy data to temporary buffer
             int bufIdx = 0;
             for (int z = recvSubdomain.tempStartZ; z <= recvSubdomain.tempEndZ; z++) {
                 for (int y = recvSubdomain.tempStartY; y <= recvSubdomain.tempEndY; y++) {
-                    int globalIdx = getLinearIndex(recvSubdomain.tempStartX, y, z, nX, nY, nZ) * timeSteps;
-                    // Use memcpy to copy a complete row for better cache performance
-                    int rowSize = recvSubdomain.tempWidth * timeSteps;
-                    memcpy(&tempBuf[bufIdx], &globalData[globalIdx], rowSize * sizeof(double));
-                    bufIdx += rowSize;
+                    for (int x = recvSubdomain.tempStartX; x <= recvSubdomain.tempEndX; x++) {
+                        int globalIdx = getLinearIndex(x, y, z, nX, nY, nZ) * timeSteps;
+                        for (int t = 0; t < timeSteps; t++) {
+                            sendBuffers[reqIdx][bufIdx++] = globalData[globalIdx + t];
+                        }
+                    }
                 }
             }
 
-            // Send the data
-            MPI_Bsend(tempBuf, sendDataSize, MPI_DOUBLE, p, 0, MPI_COMM_WORLD);
-
-            // Free temporary buffer
-            free(tempBuf);
+            // Use non-blocking send
+            MPI_Isend(sendBuffers[reqIdx], sendDataSize, MPI_DOUBLE, p, 0,
+                     MPI_COMM_WORLD, &requests[reqIdx]);
         }
 
-        // Detach and free the buffer
-        void* buf; int size;
-        MPI_Buffer_detach(&buf, &size);
-        free(buf);
+        // Wait for all non-blocking sends to complete
+        MPI_Waitall(numProcs, requests, MPI_STATUSES_IGNORE);
+
+        // Free all temporary buffers and requests
+        for (int i = 0; i < numProcs; i++) {
+            free(sendBuffers[i]);
+        }
+        free(sendBuffers);
+        free(requests);
     } else {
-        // Non-root processes receive their data
-        MPI_Status status;
-        MPI_Recv(localData, localDataSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+        // Receive data from root (still using blocking receive)
+        MPI_Recv(localData, localDataSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
     return localData;

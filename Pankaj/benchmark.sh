@@ -96,7 +96,7 @@ echo ""
 # Run tests for both implementations
 run_test "original" "./pankaj_code7"
 echo ""
-run_test "optimized" "./pankaj_code11"
+run_test "optimized" "./pankaj_code9"
 echo ""
 
 # Compare average results

@@ -1,4 +1,4 @@
 Metric,Original,Optimized,Improvement(%)
-Read Time,.456997,.401023,12.00
-Main Code Time,.049859,.041672,16.00
-Total Time,.485849,.431816,11.00
+Read Time,.393086,.373245,5.00
+Main Code Time,.041794,.037024,11.00
+Total Time,.420074,.399822,4.00

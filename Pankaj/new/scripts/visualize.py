@@ -33,16 +33,9 @@ def format_time(seconds):
         return f"{seconds:.4f} s"
 
 def plot_implementation_comparison(results_dir, df):
-    """Generate bar chart comparing different implementations."""
+    """Generate polished bar chart comparing different implementations."""
     fig_dir = os.path.join(results_dir, "figures")
     os.makedirs(fig_dir, exist_ok=True)
-
-    # Group results by implementation and compute averages
-    summary = df.groupby('implementation').agg({
-        'read_time': ['mean', 'std'],
-        'main_time': ['mean', 'std'],
-        'total_time': ['mean', 'std']
-    })
 
     # Get unique process counts for separate plots
     process_counts = sorted(df['processes'].unique())
@@ -61,35 +54,28 @@ def plot_implementation_comparison(results_dir, df):
         plot_data = pd.DataFrame({
             'Implementation': impl_summary.index,
             'Read Time': impl_summary[('read_time', 'mean')],
-            'Read Time Std': impl_summary[('read_time', 'std')],
             'Main Time': impl_summary[('main_time', 'mean')],
-            'Main Time Std': impl_summary[('main_time', 'std')],
-            'Total Time': impl_summary[('total_time', 'mean')],
-            'Total Time Std': impl_summary[('total_time', 'std')]
+            'Total Time': impl_summary[('total_time', 'mean')]
         })
 
-        # Create stacked bar chart with error bars
-        fig, ax = plt.subplots(figsize=(12, 8))
+        # Create figure with appropriate size
+        fig, ax = plt.subplots(figsize=(max(10, len(plot_data) * 2.5), 8))
 
         # Set width of bars
-        barWidth = 0.6
+        barWidth = 0.65
         br = np.arange(len(plot_data))
+
+        # Calculate max value for y-axis limit
+        max_total = (plot_data['Read Time'] + plot_data['Main Time']).max()
+        y_limit = max_total * 1.3  # Add 30% padding for labels
 
         # Plotting bars - store the bar objects for later reference
         read_bars = ax.bar(br, plot_data['Read Time'], width=barWidth,
-                           color=COLORS[0], edgecolor='grey', label='Read Time')
+                          color=COLORS[0], edgecolor='grey', label='Read Time')
 
         main_bars = ax.bar(br, plot_data['Main Time'], width=barWidth,
                           bottom=plot_data['Read Time'],
                           color=COLORS[1], edgecolor='grey', label='Main Time')
-
-        # Add error bars
-        ax.errorbar(br, plot_data['Read Time'], yerr=plot_data['Read Time Std'],
-                   fmt='none', color='black', capsize=5)
-
-        ax.errorbar(br, plot_data['Read Time'] + plot_data['Main Time'],
-                   yerr=plot_data['Main Time Std'], fmt='none',
-                   color='black', capsize=5)
 
         # Find best implementation (lowest total time)
         best_idx = np.argmin(plot_data['Total Time'].values)
@@ -98,48 +84,76 @@ def plot_implementation_comparison(results_dir, df):
 
         # Highlight best implementation with bounds check
         if 0 <= best_idx < len(read_bars):
-            read_bars[best_idx].set_edgecolor('black')
-            main_bars[best_idx].set_edgecolor('black')
-            read_bars[best_idx].set_linewidth(2)
-            main_bars[best_idx].set_linewidth(2)
 
-        # Add data value labels
+            # Optional: Add a star or marker above the best implementation
+            total = plot_data.iloc[best_idx]['Read Time'] + plot_data.iloc[best_idx]['Main Time']
+            ax.text(best_idx, total + max_total * 0.15, "★ BEST",
+                   ha='center', va='bottom', fontweight='bold', color='black',
+                   bbox=dict(facecolor='yellow', alpha=0.3, boxstyle='round,pad=0.3'))
+
+        # Add data value labels with better positioning
         for i, (r, m) in enumerate(zip(plot_data['Read Time'], plot_data['Main Time'])):
-            # Read time label
-            ax.text(i, r/2, format_time(r), ha='center', va='center',
-                   fontweight='bold', color='white')
+            total = r + m
+
+            # Only show read time label if it's significant
+            if r > 0.1 * total:
+                ax.text(i, r/2, format_time(r), ha='center', va='center',
+                       fontweight='bold', color='white', fontsize=10)
 
             # Main time label
             ax.text(i, r + m/2, format_time(m), ha='center', va='center',
-                   fontweight='bold', color='white')
+                   fontweight='bold', color='white', fontsize=10)
 
             # Total time label
-            ax.text(i, r + m + 0.02, format_time(r + m), ha='center', va='bottom')
+            ax.text(i, total + 0.02 * max_total, format_time(total),
+                   ha='center', va='bottom', fontsize=10)
 
             # Calculate improvement over baseline (assuming baseline is first)
             if i > 0 and len(plot_data) > 0:
                 baseline_total = plot_data.iloc[0]['Total Time']
-                improvement = (baseline_total - (r + m)) / baseline_total * 100
-                ax.text(i, r + m + 0.1, f"{improvement:.1f}% faster",
-                       ha='center', va='bottom', fontsize=10,
-                       color='green' if improvement > 0 else 'red')
+                improvement = (baseline_total - total) / baseline_total * 100
 
-        # Styling
-        ax.set_xlabel('Implementation', fontweight='bold')
-        ax.set_ylabel('Time (seconds)', fontweight='bold')
-        ax.set_title(f'Performance Comparison with {processes} Processes', fontweight='bold')
+                # Position improvement text based on its value to avoid overlap
+                if improvement > 0:
+                    color = 'green'
+                    text = f"{improvement:.1f}% faster"
+                else:
+                    color = 'red'
+                    text = f"{-improvement:.1f}% slower"
+
+                # Position text higher for larger values to prevent overlap
+                y_pos = total + (0.06 + abs(improvement)/400) * max_total
+                ax.text(i, y_pos, text, ha='center', va='bottom',
+                       fontsize=9, color=color,
+                       bbox=dict(facecolor='white', alpha=0.6, pad=0.1, boxstyle='round'))
+
+        # Styling with better spacing
+        ax.set_xlabel('Implementation', fontweight='bold', fontsize=12)
+        ax.set_ylabel('Time (seconds)', fontweight='bold', fontsize=12)
+        ax.set_title(f'Performance Comparison with {processes} Processes',
+                     fontweight='bold', fontsize=14, pad=20)
+
+        # Set y-axis limit with padding for labels
+        ax.set_ylim(0, y_limit)
+
+        # Set ticks and labels
         ax.set_xticks(br)
-        ax.set_xticklabels(plot_data['Implementation'])
-        ax.legend(loc='upper right')
+        ax.set_xticklabels(plot_data['Implementation'], fontsize=11)
 
-        # Add a text box with best implementation
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.05, 0.95, f"Best: {best_impl} ({format_time(best_time)})",
-               transform=ax.transAxes, fontsize=12,
+        # Add horizontal grid lines for better readability
+        ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+
+        # Move legend to a better position
+        ax.legend(loc='upper right', framealpha=0.9)
+
+        # Add a text box with best implementation in upper left
+        props = dict(boxstyle='round,pad=0.5', facecolor='wheat', alpha=0.8)
+        ax.text(0.02, 0.98, f"Best Implementation:\n{best_impl}\n({format_time(best_time)})",
+               transform=ax.transAxes, fontsize=11,
                verticalalignment='top', bbox=props)
 
-        # Save figure
-        plt.tight_layout()
+        # Add tight layout with more padding
+        plt.tight_layout(pad=2.0)
         plt.savefig(os.path.join(fig_dir, f"impl_comparison_{processes}p.png"), dpi=300)
         plt.close()
 
@@ -194,10 +208,9 @@ def plot_scaling_analysis(results_dir, df):
 
             x = proc_summary['processes']
             y = proc_summary[('total_time', 'mean')]
-            yerr = proc_summary[('total_time', 'std')]
 
-            # Execution time plot
-            ax1.errorbar(x, y, yerr=yerr, marker='o', label=impl, color=COLORS[i % len(COLORS)])
+            # Execution time plot - no error bars
+            ax1.plot(x, y, marker='o', label=impl, color=COLORS[i % len(COLORS)])
 
             # Add data labels
             for j, (proc, time) in enumerate(zip(x, y)):
@@ -347,10 +360,7 @@ def plot_communication_analysis(results_dir, df):
                               bottom=decomp_summary[('read_time', 'mean')],
                               color=COLORS[1], edgecolor='grey', label='Main Time')
 
-            # Add error bars for total time
-            ax.errorbar(br, decomp_summary[('read_time', 'mean')] + decomp_summary[('main_time', 'mean')],
-                       yerr=decomp_summary[('total_time', 'std')], fmt='none',
-                       color='black', capsize=5)
+            # Error bars removed
 
             # Add data value labels
             for i, (r, m) in enumerate(zip(decomp_summary[('read_time', 'mean')],

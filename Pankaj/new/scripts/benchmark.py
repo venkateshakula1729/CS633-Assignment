@@ -39,10 +39,10 @@ DATASETS = [
 PROCESS_COUNTS = [8, 16]
 
 # Number of iterations per configuration
-ITERATIONS = 2
+ITERATIONS = 10
 
 # Output directory
-OUTPUT_DIR = f"results/benchmark_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+OUTPUT_DIR = f"../results/benchmark_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 # Timeout in seconds
 TIMEOUT = 600  # 10 minutes

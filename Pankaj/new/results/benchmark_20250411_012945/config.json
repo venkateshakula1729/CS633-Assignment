@@ -1,0 +1,47 @@
+{
+  "timestamp": "20250411_012945",
+  "implementations": [
+    "send",
+    "mem_send",
+    "bsend",
+    "isend"
+  ],
+  "datasets": [
+    "../data/art_data_256_256_256_7.txt"
+  ],
+  "process_counts": [
+    8
+  ],
+  "iterations": 2,
+  "process_decompositions": {
+    "8": [
+      [
+        2,
+        2,
+        2
+      ]
+    ],
+    "16": [
+      [
+        4,
+        2,
+        2
+      ]
+    ],
+    "32": [
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "64": [
+      [
+        4,
+        4,
+        4
+      ]
+    ]
+  },
+  "timeout": 600
+}

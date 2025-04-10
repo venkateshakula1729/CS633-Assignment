@@ -1,0 +1,47 @@
+{
+  "timestamp": "20250411_011024",
+  "implementations": [
+    "send",
+    "mem_send",
+    "mem_bsend",
+    "mem_isend"
+  ],
+  "datasets": [
+    "../data/data_64_64_64_3.txt"
+  ],
+  "process_counts": [
+    8
+  ],
+  "iterations": 2,
+  "process_decompositions": {
+    "8": [
+      [
+        2,
+        2,
+        2
+      ]
+    ],
+    "16": [
+      [
+        4,
+        2,
+        2
+      ]
+    ],
+    "32": [
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "64": [
+      [
+        4,
+        4,
+        4
+      ]
+    ]
+  },
+  "timeout": 600
+}

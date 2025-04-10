@@ -24,19 +24,20 @@ from pathlib import Path
 # ===================== CONFIGURATION =====================
 # Implementations to benchmark
 IMPLEMENTATIONS = {
-    "pankaj_code7": "../src/bin/pankaj_code7",
-    "pankaj_code9": "../src/bin/pankaj_code9",
-    "pankaj_code11": "../src/bin/pankaj_code11"
+    "send": "../src/bin/pankaj_code7",
+    "mem_send": "../src/bin/pankaj_code9",
+    "bsend": "../src/bin/pankaj_code10",
+    "isend": "../src/bin/pankaj_code11"
 }
 
 # Datasets
 DATASETS = [
     "../data/data_64_64_64_3.txt",
-    "../data/data_64_64_96_7.txt"
+    # "../data/art_data_256_256_256_7.txt"
 ]
 
 # Process counts to test
-PROCESS_COUNTS = [8, 16]
+PROCESS_COUNTS = [8]
 
 # Number of iterations per configuration
 ITERATIONS = 10
@@ -58,7 +59,7 @@ PROCESS_DECOMPOSITIONS = {
 }
 
 # Generate visualizations after benchmarking
-GENERATE_VISUALIZATIONS = False
+GENERATE_VISUALIZATIONS = True
 
 # ===================== END CONFIGURATION =====================
 

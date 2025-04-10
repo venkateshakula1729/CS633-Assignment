@@ -228,10 +228,12 @@ double* distributeData(int rank, const SubDomain* subdomain, double* globalData,
         int idx = 0;
         for (int z = subdomain->tempStartZ; z <= subdomain->tempEndZ; z++) {
             for (int y = subdomain->tempStartY; y <= subdomain->tempEndY; y++) {
-                int globalRowStart = getLinearIndex(subdomain->tempStartX, y, z, nX, nY, nZ) * timeSteps;
-                int rowSize = subdomain->tempWidth * timeSteps;
-                memcpy(&localData[idx], &globalData[globalRowStart], rowSize * sizeof(double));
-                idx += rowSize;
+                for (int x = subdomain->tempStartX; x <= subdomain->tempEndX; x++) {
+                    int globalIdx = getLinearIndex(x, y, z, nX, nY, nZ) * timeSteps;
+                    for (int t = 0; t < timeSteps; t++) {
+                        localData[idx++] = globalData[globalIdx + t];
+                    }
+                }
             }
         }
 
@@ -273,10 +275,12 @@ double* distributeData(int rank, const SubDomain* subdomain, double* globalData,
             int bufIdx = 0;
             for (int z = recvSubdomain.tempStartZ; z <= recvSubdomain.tempEndZ; z++) {
                 for (int y = recvSubdomain.tempStartY; y <= recvSubdomain.tempEndY; y++) {
-                    int globalRowStart = getLinearIndex(recvSubdomain.tempStartX, y, z, nX, nY, nZ) * timeSteps;
-                    int rowSize = recvSubdomain.tempWidth * timeSteps;
-                    memcpy(&sendBuffers[reqIdx][bufIdx], &globalData[globalRowStart], rowSize * sizeof(double));
-                    bufIdx += rowSize;
+                    for (int x = recvSubdomain.tempStartX; x <= recvSubdomain.tempEndX; x++) {
+                        int globalIdx = getLinearIndex(x, y, z, nX, nY, nZ) * timeSteps;
+                        for (int t = 0; t < timeSteps; t++) {
+                            sendBuffers[reqIdx][bufIdx++] = globalData[globalIdx + t];
+                        }
+                    }
                 }
             }
 

@@ -1,0 +1,4 @@
+implementation,dataset,processes,px,py,pz,read_time_mean,read_time_std,main_time_mean,main_time_std,total_time_mean,total_time_std
+ind_IO,../data/data_64_64_96_7.bin,8,2,2,2,,,0,0,0,0
+isend,../data/data_64_64_96_7.bin,8,2,2,2,,,0,0,0,0
+send,../data/data_64_64_96_7.bin,8,2,2,2,,,0,0,0,0

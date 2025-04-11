@@ -24,7 +24,7 @@ from pathlib import Path
 # ===================== CONFIGURATION =====================
 # Implementations to benchmark
 IMPLEMENTATIONS = {
-    # "send": "../src/bin/pankaj_code7",
+    "send": "../src/bin/pankaj_code7",
     # "mem_send": "../src/bin/pankaj_code9",
     # "bsend": "../src/bin/pankaj_code10",
     "isend": "../src/bin/pankaj_code11",
@@ -38,11 +38,11 @@ IMPLEMENTATIONS = {
 DATASETS = [
     # "../data/data_64_64_64_3.bin",
     "../data/art_data_256_256_256_7.bin",
-    # "../data/data_64_64_96_7.bin",
+    "../data/data_64_64_96_7.bin",
 ]
 
 # Process counts to test
-PROCESS_COUNTS = [8]
+PROCESS_COUNTS = [8, 16]
 
 # Number of iterations per configuration
 ITERATIONS = 5

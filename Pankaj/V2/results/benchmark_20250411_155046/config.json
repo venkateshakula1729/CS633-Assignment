@@ -1,0 +1,46 @@
+{
+  "timestamp": "20250411_155046",
+  "implementations": [
+    "isend",
+    "ind_IO",
+    "coll_IO"
+  ],
+  "datasets": [
+    "../data/art_data_256_256_256_7.bin"
+  ],
+  "process_counts": [
+    8
+  ],
+  "iterations": 5,
+  "process_decompositions": {
+    "8": [
+      [
+        2,
+        2,
+        2
+      ]
+    ],
+    "16": [
+      [
+        4,
+        2,
+        2
+      ]
+    ],
+    "32": [
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "64": [
+      [
+        4,
+        4,
+        4
+      ]
+    ]
+  },
+  "timeout": 600
+}

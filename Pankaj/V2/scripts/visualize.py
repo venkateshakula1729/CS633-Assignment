@@ -87,7 +87,7 @@ def plot_implementation_comparison(results_dir, df):
 
             # Optional: Add a star or marker above the best implementation
             total = plot_data.iloc[best_idx]['Read Time'] + plot_data.iloc[best_idx]['Main Time']
-            ax.text(best_idx, total + max_total * 0.15, "★ BEST",
+            ax.text(best_idx, total + max_total * 0.1, "★ BEST",
                    ha='center', va='bottom', fontweight='bold', color='black',
                    bbox=dict(facecolor='yellow', alpha=0.3, boxstyle='round,pad=0.3'))
 
@@ -108,24 +108,24 @@ def plot_implementation_comparison(results_dir, df):
             ax.text(i, total + 0.02 * max_total, format_time(total),
                    ha='center', va='bottom', fontsize=10)
 
-            # Calculate improvement over baseline (assuming baseline is first)
-            if i > 0 and len(plot_data) > 0:
-                baseline_total = plot_data.iloc[0]['Total Time']
-                improvement = (baseline_total - total) / baseline_total * 100
+            # # Calculate improvement over baseline (assuming baseline is first)
+            # if i > 0 and len(plot_data) > 0:
+            #     baseline_total = plot_data.iloc[0]['Total Time']
+            #     improvement = (baseline_total - total) / baseline_total * 100
 
-                # Position improvement text based on its value to avoid overlap
-                if improvement > 0:
-                    color = 'green'
-                    text = f"{improvement:.1f}% faster"
-                else:
-                    color = 'red'
-                    text = f"{-improvement:.1f}% slower"
+            #     # Position improvement text based on its value to avoid overlap
+            #     if improvement > 0:
+            #         color = 'green'
+            #         text = f"{improvement:.1f}% faster"
+            #     else:
+            #         color = 'red'
+            #         text = f"{-improvement:.1f}% slower"
 
-                # Position text higher for larger values to prevent overlap
-                y_pos = total + (0.06 + abs(improvement)/400) * max_total
-                ax.text(i, y_pos, text, ha='center', va='bottom',
-                       fontsize=9, color=color,
-                       bbox=dict(facecolor='white', alpha=0.6, pad=0.1, boxstyle='round'))
+            #     # Position text higher for larger values to prevent overlap
+            #     y_pos = total + (0.06 + abs(improvement)/400) * max_total
+            #     ax.text(i, y_pos, text, ha='center', va='bottom',
+            #            fontsize=9, color=color,
+            #            bbox=dict(facecolor='white', alpha=0.6, pad=0.1, boxstyle='round'))
 
         # Styling with better spacing
         ax.set_xlabel('Implementation', fontweight='bold', fontsize=12)

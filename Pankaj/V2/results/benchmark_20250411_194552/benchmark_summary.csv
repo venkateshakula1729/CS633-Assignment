@@ -1,0 +1,3 @@
+implementation,dataset,processes,px,py,pz,read_time_mean,read_time_std,read_time_min,read_time_max,main_time_mean,main_time_std,main_time_min,main_time_max,total_time_mean,total_time_std,total_time_min,total_time_max
+send,../data/data_64_64_96_7.bin,8,2,2,2,Running:,Running:,,,0,0,mpirun,mpirun,0,0,-np,-np
+isend,../data/data_64_64_96_7.bin,8,2,2,2,Running:,Running:,,,0,0,mpirun,mpirun,0,0,-np,-np

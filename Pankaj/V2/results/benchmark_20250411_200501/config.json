@@ -1,0 +1,14 @@
+{
+  "timestamp": "20250411_200501",
+  "implementations": [
+    "send",
+    "isend",
+    "ind_IO"
+  ],
+  "datasets": [
+    "../data/data_64_64_96_7.bin"
+  ],
+  "process_counts": [8],
+  "iterations": 2,
+  "timeout": 600
+}

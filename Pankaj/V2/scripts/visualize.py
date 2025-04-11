@@ -551,7 +551,7 @@ def plot_breakdown_analysis(results_dir, df):
     # Extract unique implementations
     implementations = sorted(df['implementation'].unique())
 
-    # Compute the percentage of time spent in each phase for different process counts
+    # Compute the time spent in each phase for different process counts
     for impl in implementations:
         impl_df = df[df['implementation'] == impl]
 
@@ -574,75 +574,88 @@ def plot_breakdown_analysis(results_dir, df):
         if proc_summary.empty:
             continue
 
-        # Calculate percentages
-        proc_summary['read_pct'] = proc_summary[('read_time', 'mean')] / proc_summary[('total_time', 'mean')] * 100
-        proc_summary['main_pct'] = proc_summary[('main_time', 'mean')] / proc_summary[('total_time', 'mean')] * 100
-
         # Sort by process count
         proc_summary = proc_summary.sort_values('processes')
 
-        # Create plot
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
+        # Create plot - now with just a single plot instead of subplots
+        fig, ax = plt.subplots(figsize=(12, 8))
 
-        # Plot absolute times
-        ax1.bar(proc_summary['processes'], proc_summary[('read_time', 'mean')],
-               label='Read Time', color=COLORS[0])
-        ax1.bar(proc_summary['processes'], proc_summary[('main_time', 'mean')],
-               bottom=proc_summary[('read_time', 'mean')],
-               label='Main Time', color=COLORS[1])
+        # Calculate appropriate bar width based on number of data points
+        bar_width = min(0.7, 3.0 / len(proc_summary))
 
-        # Add data labels
-        for i, (p, r, m) in enumerate(zip(proc_summary['processes'],
-                                        proc_summary[('read_time', 'mean')],
-                                        proc_summary[('main_time', 'mean')])):
-            # Read time label if significant
-            if r > 0.05 * (r + m):
-                ax1.text(p, r/2, format_time(r), ha='center', va='center',
-                        color='white', fontweight='bold')
+        # Use numerical x positions for consistent spacing
+        x_pos = np.arange(len(proc_summary))
 
-            # Main time label
-            ax1.text(p, r + m/2, format_time(m), ha='center', va='center',
-                    color='white', fontweight='bold')
+        # Calculate the maximum total time to set y-axis limit and label positioning
+        max_total_time = max(proc_summary[('read_time', 'mean')] + proc_summary[('main_time', 'mean')])
 
-            # Total time
-            ax1.text(p, r + m + 0.02, format_time(r + m), ha='center', va='bottom')
+        # Define fixed offset for labels (in data units)
+        fixed_label_offset = max_total_time * 0.04  # 4% of the max height
+
+        # Plot absolute times with improved styling
+        read_bars = ax.bar(x_pos, proc_summary[('read_time', 'mean')],
+               width=bar_width, label='Read Time', color=COLORS[0], edgecolor='gray', alpha=0.9)
+
+        main_bars = ax.bar(x_pos, proc_summary[('main_time', 'mean')],
+               width=bar_width, bottom=proc_summary[('read_time', 'mean')],
+               label='Main Time', color=COLORS[1], edgecolor='gray', alpha=0.9)
+
+        # Add data labels with improved positioning and styling
+        for i, (p, r, m) in enumerate(zip(x_pos,
+                                       proc_summary[('read_time', 'mean')],
+                                       proc_summary[('main_time', 'mean')])):
+            total = r + m
+
+            # Only show read time label if it's significant enough to be readable
+            if r > 0.1 * total and r > 0.05:
+                ax.text(p, r/2, format_time(r), ha='center', va='center',
+                       color='white', fontweight='bold', fontsize=10)
+
+            # Main time label (always show)
+            ax.text(p, r + m/2, format_time(m), ha='center', va='center',
+                   color='white', fontweight='bold', fontsize=10)
+
+            # Total time - positioned at fixed height above the bar with background
+            bbox_props = dict(
+                boxstyle="round,pad=0.3",
+                fc="lightyellow",
+                ec="gray",
+                lw=1,
+                alpha=0.8
+            )
+
+            # Position label at a fixed distance from the top of each bar
+            label_y_pos = r + m + fixed_label_offset
+
+            ax.text(
+                p, label_y_pos,
+                format_time(total),
+                ha='center',
+                va='bottom',
+                fontsize=10,
+                fontweight='bold',
+                color='black',
+                bbox=bbox_props
+            )
 
         # Styling for absolute times
-        ax1.set_xlabel('Number of Processes', fontweight='bold')
-        ax1.set_ylabel('Time (seconds)', fontweight='bold')
-        ax1.set_title('Absolute Time Breakdown', fontweight='bold')
-        ax1.legend(loc='upper right')
+        ax.set_xlabel('Number of Processes', fontweight='bold', fontsize=12)
+        ax.set_ylabel('Time (seconds)', fontweight='bold', fontsize=12)
+        ax.set_title('Time Breakdown Analysis', fontweight='bold', fontsize=14)
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels(proc_summary['processes'])
+        ax.legend(loc='upper right', fontsize=11)
 
-        # Plot percentage breakdown
-        ax2.bar(proc_summary['processes'], proc_summary['read_pct'],
-               label='Read Time %', color=COLORS[0])
-        ax2.bar(proc_summary['processes'], proc_summary['main_pct'],
-               bottom=proc_summary['read_pct'],
-               label='Main Time %', color=COLORS[1])
+        # Add grid lines for better readability
+        ax.yaxis.grid(True, linestyle='--', alpha=0.3)
 
-        # Add percentage labels
-        for i, (p, r_pct, m_pct) in enumerate(zip(proc_summary['processes'],
-                                                proc_summary['read_pct'],
-                                                proc_summary['main_pct'])):
-            # Read percentage if significant
-            if r_pct > 5:
-                ax2.text(p, r_pct/2, f"{r_pct:.1f}%", ha='center', va='center',
-                        color='white', fontweight='bold')
+        # Add padding to y-axis for label visibility with fixed spacing
+        ax.set_ylim(0, max_total_time * 1.3)  # 30% padding for labels
 
-            # Main percentage
-            ax2.text(p, r_pct + m_pct/2, f"{m_pct:.1f}%", ha='center', va='center',
-                    color='white', fontweight='bold')
-
-        # Styling for percentage breakdown
-        ax2.set_xlabel('Number of Processes', fontweight='bold')
-        ax2.set_ylabel('Percentage of Total Time', fontweight='bold')
-        ax2.set_title('Percentage Time Breakdown', fontweight='bold')
-        ax2.legend(loc='upper right')
-
-        # Overall plot styling
-        fig.suptitle(f'Time Breakdown Analysis: {impl}', fontsize=16, fontweight='bold')
+        # Add implementation name as subtitle
+        plt.suptitle(f'Implementation: {impl}', fontsize=16, fontweight='bold')
         plt.tight_layout()
-        plt.subplots_adjust(top=0.9)  # Adjust for the suptitle
+        plt.subplots_adjust(top=0.92)  # Adjust for the suptitle
 
         plt.savefig(os.path.join(fig_dir, f"breakdown_{impl}.png"), dpi=300)
         plt.close()

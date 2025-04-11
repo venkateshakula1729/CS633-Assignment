@@ -1,0 +1,6 @@
+Timestamp: Friday 11 April 2025 08:40:19 PM IST
+Implementations: send isend
+Datasets: ../data/data_64_64_96_7.bin
+Process counts: 8
+Iterations: 5
+Timeout: 600

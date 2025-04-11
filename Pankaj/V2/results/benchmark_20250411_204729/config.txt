@@ -1,0 +1,6 @@
+Timestamp: Friday 11 April 2025 08:47:29 PM IST
+Implementations: coll_IO send isend coll_IO_der ind_IO_der ind_IO
+Datasets: ../data/art_data_256_256_256_7.bin
+Process counts: 8
+Iterations: 5
+Timeout: 600

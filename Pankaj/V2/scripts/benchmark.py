@@ -28,21 +28,21 @@ IMPLEMENTATIONS = {
     # "mem_send": "../src/bin/pankaj_code9",
     # "bsend": "../src/bin/pankaj_code10",
     "isend": "../src/bin/pankaj_code11",
-    "ind_IO": "../src/bin/independentIO",
-    "coll_IO": "../src/bin/collectiveIO",
-    "ind_IO_der": "../src/bin/independentIO_derData",
-    "coll_IO_der": "../src/bin/collectiveIO_derData",
+    # "ind_IO": "../src/bin/independentIO",
+    # "coll_IO": "../src/bin/collectiveIO",
+    # "ind_IO_der": "../src/bin/independentIO_derData",
+    # "coll_IO_der": "../src/bin/collectiveIO_derData",
 }
 
 # Datasets
 DATASETS = [
     # "../data/data_64_64_64_3.bin",
-    "../data/art_data_256_256_256_7.bin",
+    # "../data/art_data_256_256_256_7.bin",
     "../data/data_64_64_96_7.bin",
 ]
 
 # Process counts to test
-PROCESS_COUNTS = [8, 16]
+PROCESS_COUNTS = [8]
 
 # Number of iterations per configuration
 ITERATIONS = 5

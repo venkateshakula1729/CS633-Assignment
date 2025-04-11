@@ -160,7 +160,7 @@ void calculateSubDomainBoundaries(int rank, int pX, int pY, int pZ, int nX, int 
     subdomain->tempDepth = subdomain->tempEndZ - subdomain->tempStartZ + 1;
 }
 
-// Optimized file reading function
+// Optimized binary file reading function
 double* readInputData(const char* inputFile, int totalDomainSize, int timeSteps) {
     double* data = (double*)malloc(totalDomainSize * timeSteps * sizeof(double));
     if (!data) {
@@ -168,7 +168,7 @@ double* readInputData(const char* inputFile, int totalDomainSize, int timeSteps)
         return NULL;
     }
 
-    FILE* fp = fopen(inputFile, "r");
+    FILE* fp = fopen(inputFile, "rb");  // Open in binary mode
     if (!fp) {
         printf("Failed to open input file: %s\n", inputFile);
         free(data);
@@ -181,33 +181,47 @@ double* readInputData(const char* inputFile, int totalDomainSize, int timeSteps)
         setvbuf(fp, buffer, _IOFBF, 8192 * 1024);
     }
 
-    // Read data in larger blocks
+    // Allocate a temporary buffer for reading floats
     const int BLOCK_SIZE = 1024;
-    char lineBuffer[4096];
+    float* floatBuffer = (float*)malloc(BLOCK_SIZE * timeSteps * sizeof(float));
+    if (!floatBuffer) {
+        printf("Failed to allocate memory for float buffer\n");
+        free(data);
+        if (buffer) free(buffer);
+        fclose(fp);
+        return NULL;
+    }
 
+    // Read data in blocks and convert from float to double
     for (int point = 0; point < totalDomainSize; point += BLOCK_SIZE) {
         int blockEnd = (point + BLOCK_SIZE < totalDomainSize) ?
                       point + BLOCK_SIZE : totalDomainSize;
+        int pointsToRead = blockEnd - point;
 
-        for (int p = point; p < blockEnd; p++) {
-            if (!fgets(lineBuffer, sizeof(lineBuffer), fp)) {
-                printf("Error reading data point\n");
-                fclose(fp);
-                free(data);
-                if (buffer) free(buffer);
-                return NULL;
-            }
+        // Read a block of float values
+        size_t itemsRead = fread(floatBuffer, sizeof(float), pointsToRead * timeSteps, fp);
 
-            char* token = strtok(lineBuffer, " \t\n");
-            for (int t = 0; t < timeSteps && token != NULL; t++) {
-                data[p * timeSteps + t] = atof(token);
-                token = strtok(NULL, " \t\n");
+        if (itemsRead != pointsToRead * timeSteps) {
+            printf("Error reading data: expected %d items, got %zu\n",
+                   pointsToRead * timeSteps, itemsRead);
+            free(data);
+            free(floatBuffer);
+            if (buffer) free(buffer);
+            fclose(fp);
+            return NULL;
+        }
+
+        // Convert float values to double
+        for (int p = 0; p < pointsToRead; p++) {
+            for (int t = 0; t < timeSteps; t++) {
+                data[(point + p) * timeSteps + t] = (double)floatBuffer[p * timeSteps + t];
             }
         }
     }
 
-    fclose(fp);
+    free(floatBuffer);
     if (buffer) free(buffer);
+    fclose(fp);
     return data;
 }
 

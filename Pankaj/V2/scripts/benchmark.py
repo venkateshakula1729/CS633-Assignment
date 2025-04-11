@@ -25,22 +25,24 @@ from pathlib import Path
 # Implementations to benchmark
 IMPLEMENTATIONS = {
     "send": "../src/bin/pankaj_code7",
-    "mem_send": "../src/bin/pankaj_code9",
-    "bsend": "../src/bin/pankaj_code10",
-    "isend": "../src/bin/pankaj_code11"
+    # "mem_send": "../src/bin/pankaj_code9",
+    # "bsend": "../src/bin/pankaj_code10",
+    "isend": "../src/bin/pankaj_code11",
+    "ind_IO": "../src/bin/independentIO",
 }
 
 # Datasets
 DATASETS = [
-    "../data/data_64_64_64_3.txt",
-    # "../data/art_data_256_256_256_7.txt"
+    # "../data/data_64_64_64_3.txt",
+    "../data/art_data_256_256_256_7.bin",
+    # "../data/data_64_64_96_7.bin",
 ]
 
 # Process counts to test
 PROCESS_COUNTS = [8]
 
 # Number of iterations per configuration
-ITERATIONS = 10
+ITERATIONS = 5
 
 # Output directory
 OUTPUT_DIR = f"../results/benchmark_{datetime.now().strftime('%Y%m%d_%H%M%S')}"

@@ -4,6 +4,9 @@ Data Generator for Time Series Parallel Processing
 Creates synthetic 3D time series data files for testing parallel implementations.
 
 Usage: python generate_data.py nx ny nz timesteps [output_file] [--pattern {wave|random|blend}]
+
+The output is a binary file containing float32 values, with each grid point's time series
+stored sequentially.
 """
 
 import numpy as np
@@ -96,30 +99,30 @@ def generate_blend_data(nx, ny, nz, timesteps):
     return data
 
 def write_data_file(data, output_file):
-    """Write the generated data to a file."""
+    """Write the generated data to a binary file containing float32 values."""
     nx, ny, nz, timesteps = data.shape
     total_points = nx * ny * nz
 
-    print(f"Writing data to {output_file}...")
+    # Make sure the output file has .bin extension
+    if not output_file.endswith('.bin'):
+        output_file = output_file.replace('.txt', '.bin') if output_file.endswith('.txt') else output_file + '.bin'
+
+    print(f"Writing binary data to {output_file}...")
     start_time = time.time()
 
-    with open(output_file, 'w') as f:
-        # Process each grid point
-        point_count = 0
-        for z in range(nz):
-            for y in range(ny):
-                for x in range(nx):
-                    # Get all timesteps for this point
-                    values = [f"{data[x, y, z, t]:.2f}" for t in range(timesteps)]
-                    f.write(" ".join(values) + "\n")
+    # Convert data to float32 to save space
+    data_float32 = data.astype(np.float32)
 
-                    # Progress reporting
-                    point_count += 1
-                    if point_count % max(1, total_points // 20) == 0:
-                        print(f"  Progress: {point_count}/{total_points} points written ({point_count/total_points*100:.1f}%)")
+    # Reshape to have each grid point's time series as a row
+    # This reshapes from (nx, ny, nz, timesteps) to (nx*ny*nz, timesteps)
+    reshaped_data = data_float32.reshape(nx * ny * nz, timesteps)
+
+    # Write to binary file
+    with open(output_file, 'wb') as f:
+        reshaped_data.tofile(f)
 
     file_size_mb = os.path.getsize(output_file) / (1024 * 1024)
-    print(f"File written successfully in {time.time() - start_time:.2f} seconds")
+    print(f"Binary file written successfully in {time.time() - start_time:.2f} seconds")
     print(f"Output file size: {file_size_mb:.2f} MB")
 
 def main():
@@ -144,7 +147,7 @@ def main():
 
     # Create output file name if not specified
     if args.output_file is None:
-        args.output_file = f"../data/art_data_{args.nx}_{args.ny}_{args.nz}_{args.timesteps}.txt"
+        args.output_file = f"../data/art_data_{args.nx}_{args.ny}_{args.nz}_{args.timesteps}.bin"
 
     print(f"Generating {args.pattern} data with dimensions: {args.nx}x{args.ny}x{args.nz} and {args.timesteps} timesteps")
 

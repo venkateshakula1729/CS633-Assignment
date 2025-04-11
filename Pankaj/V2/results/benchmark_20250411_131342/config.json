@@ -1,0 +1,46 @@
+{
+  "timestamp": "20250411_131342",
+  "implementations": [
+    "send",
+    "isend",
+    "ind_IO"
+  ],
+  "datasets": [
+    "../data/data_64_64_96_7.bin"
+  ],
+  "process_counts": [
+    8
+  ],
+  "iterations": 5,
+  "process_decompositions": {
+    "8": [
+      [
+        2,
+        2,
+        2
+      ]
+    ],
+    "16": [
+      [
+        4,
+        2,
+        2
+      ]
+    ],
+    "32": [
+      [
+        4,
+        4,
+        2
+      ]
+    ],
+    "64": [
+      [
+        4,
+        4,
+        4
+      ]
+    ]
+  },
+  "timeout": 600
+}

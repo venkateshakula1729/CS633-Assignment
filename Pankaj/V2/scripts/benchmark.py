@@ -33,8 +33,8 @@ IMPLEMENTATIONS = {
 
 # Datasets
 DATASETS = [
-    # "../data/data_64_64_64_3.txt",
-    "../data/art_data_256_256_256_7.bin",
+    "../data/data_64_64_64_3.bin",
+    # "../data/art_data_256_256_256_7.bin",
     # "../data/data_64_64_96_7.bin",
 ]
 

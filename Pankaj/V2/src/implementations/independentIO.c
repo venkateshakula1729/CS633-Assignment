@@ -160,7 +160,7 @@ void calculateSubDomainBoundaries(int rank, int pX, int pY, int pZ, int nX, int 
     subdomain->tempDepth = subdomain->tempEndZ - subdomain->tempStartZ + 1;
 }
 
-// Level-0 Parallel I/O: Independent I/O for reading binary data
+// Level-0 Parallel I/O: Optimized Independent I/O for reading binary data
 float* readInputDataParallel_Level0(const char* inputFile, const SubDomain* subdomain,
                                    int nX, int nY, int nZ, int timeSteps) {
     // Allocate memory for local data (including ghost regions)
@@ -187,22 +187,25 @@ float* readInputDataParallel_Level0(const char* inputFile, const SubDomain* subd
         return NULL;
     }
 
-    // Read data for subdomain (including ghost regions) directly from file
-    int idx = 0;
+    // Read data for each z-y plane in the subdomain
+    int localIdx = 0;
     for (int z = subdomain->tempStartZ; z <= subdomain->tempEndZ; z++) {
         for (int y = subdomain->tempStartY; y <= subdomain->tempEndY; y++) {
-            for (int x = subdomain->tempStartX; x <= subdomain->tempEndX; x++) {
-                // Calculate file offset for this point
-                MPI_Offset offset = (getLinearIndex(x, y, z, nX, nY, nZ) * timeSteps) * sizeof(float);
+            // For each (z,y), read the entire row from tempStartX to tempEndX
+            int xRowLength = subdomain->tempEndX - subdomain->tempStartX + 1;
+            MPI_Offset offset = ((z * nY + y) * nX + subdomain->tempStartX) * timeSteps * sizeof(float);
 
-                // Seek to the correct position
-                MPI_File_seek(fh, offset, MPI_SEEK_SET);
+            MPI_File_seek(fh, offset, MPI_SEEK_SET);
+            MPI_File_read(fh, &localData[localIdx], xRowLength * timeSteps, MPI_FLOAT, &status);
 
-                // Read timeSteps values for this point
-                MPI_File_read(fh, &localData[idx], timeSteps, MPI_FLOAT, &status);
-
-                idx += timeSteps;
+            // Verify that the correct amount of data was read
+            int count;
+            MPI_Get_count(&status, MPI_FLOAT, &count);
+            if (count != xRowLength * timeSteps) {
+                printf("Error: Read %d elements, expected %d\n", count, xRowLength * timeSteps);
             }
+
+            localIdx += xRowLength * timeSteps;
         }
     }
 

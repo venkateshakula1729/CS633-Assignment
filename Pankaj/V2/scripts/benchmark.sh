@@ -7,20 +7,22 @@
 declare -A IMPLEMENTATIONS=(
     ["send"]="../src/bin/pankaj_code7"
     ["isend"]="../src/bin/pankaj_code11"
+    ["bsend"]="../src/bin/pankaj_code10"
     ["ind_IO"]="../src/bin/independentIO"
-    ["coll_IO"]="../src/bin/collectiveIO"
+    # ["coll_IO"]="../src/bin/collectiveIO"
     ["ind_IO_der"]="../src/bin/independentIO_derData"
     ["coll_IO_der"]="../src/bin/collectiveIO_derData"
 )
 
 # Datasets
 DATASETS=(
-    # "../data/data_64_64_96_7.bin"
-    "../data/art_data_256_256_256_7.bin"
+    "../data/data_64_64_96_7.bin"
+    "../data/data_64_64_64_3.bin"
+    # "../data/art_data_256_256_256_7.bin"
 )
 
 # Process counts to test
-PROCESS_COUNTS=(8)
+PROCESS_COUNTS=(8 16 32 64)
 
 # Number of iterations per configuration
 ITERATIONS=5
@@ -138,7 +140,7 @@ for dataset in "${DATASETS[@]}"; do
                 # Build command
                 cmd=(
                     timeout --kill-after=10 $TIMEOUT
-                    mpirun -np "$processes" --oversubscribe
+                    mpirun -np "$processes"
                     "$executable" "$dataset"
                     "$px" "$py" "$pz"
                     "$nx" "$ny" "$nz" "$timesteps"

@@ -72,21 +72,21 @@ bool isLocalMinimum(double* data, int x, int y, int z, int width, int height, in
 
     // Check all six neighbors (if they exist)
     // X-axis neighbors
-    if (x > 0 && data[getLinearIndex(x-1, y, z, width, height, depth) * timeSteps + time] < value)
+    if (x > 0 && data[getLinearIndex(x-1, y, z, width, height, depth) * timeSteps + time] <= value)
         return false;
-    if (x < width-1 && data[getLinearIndex(x+1, y, z, width, height, depth) * timeSteps + time] < value)
+    if (x < width-1 && data[getLinearIndex(x+1, y, z, width, height, depth) * timeSteps + time] <= value)
         return false;
 
     // Y-axis neighbors
-    if (y > 0 && data[getLinearIndex(x, y-1, z, width, height, depth) * timeSteps + time] < value)
+    if (y > 0 && data[getLinearIndex(x, y-1, z, width, height, depth) * timeSteps + time] <= value)
         return false;
-    if (y < height-1 && data[getLinearIndex(x, y+1, z, width, height, depth) * timeSteps + time] < value)
+    if (y < height-1 && data[getLinearIndex(x, y+1, z, width, height, depth) * timeSteps + time] <= value)
         return false;
 
     // Z-axis neighbors
-    if (z > 0 && data[getLinearIndex(x, y, z-1, width, height, depth) * timeSteps + time] < value)
+    if (z > 0 && data[getLinearIndex(x, y, z-1, width, height, depth) * timeSteps + time] <= value)
         return false;
-    if (z < depth-1 && data[getLinearIndex(x, y, z+1, width, height, depth) * timeSteps + time] < value)
+    if (z < depth-1 && data[getLinearIndex(x, y, z+1, width, height, depth) * timeSteps + time] <= value)
         return false;
 
     return true;
@@ -99,21 +99,21 @@ bool isLocalMaximum(double* data, int x, int y, int z, int width, int height, in
 
     // Check all six neighbors (if they exist)
     // X-axis neighbors
-    if (x > 0 && data[getLinearIndex(x-1, y, z, width, height, depth) * timeSteps + time] > value)
+    if (x > 0 && data[getLinearIndex(x-1, y, z, width, height, depth) * timeSteps + time] >= value)
         return false;
-    if (x < width-1 && data[getLinearIndex(x+1, y, z, width, height, depth) * timeSteps + time] > value)
+    if (x < width-1 && data[getLinearIndex(x+1, y, z, width, height, depth) * timeSteps + time] >= value)
         return false;
 
     // Y-axis neighbors
-    if (y > 0 && data[getLinearIndex(x, y-1, z, width, height, depth) * timeSteps + time] > value)
+    if (y > 0 && data[getLinearIndex(x, y-1, z, width, height, depth) * timeSteps + time] >= value)
         return false;
-    if (y < height-1 && data[getLinearIndex(x, y+1, z, width, height, depth) * timeSteps + time] > value)
+    if (y < height-1 && data[getLinearIndex(x, y+1, z, width, height, depth) * timeSteps + time] >= value)
         return false;
 
     // Z-axis neighbors
-    if (z > 0 && data[getLinearIndex(x, y, z-1, width, height, depth) * timeSteps + time] > value)
+    if (z > 0 && data[getLinearIndex(x, y, z-1, width, height, depth) * timeSteps + time] >= value)
         return false;
-    if (z < depth-1 && data[getLinearIndex(x, y, z+1, width, height, depth) * timeSteps + time] > value)
+    if (z < depth-1 && data[getLinearIndex(x, y, z+1, width, height, depth) * timeSteps + time] >= value)
         return false;
 
     return true;

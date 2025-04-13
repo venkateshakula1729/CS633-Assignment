@@ -1,6 +1,0 @@
-Timestamp: Sun Apr 13 03:20:58 IST 2025
-Implementations: coll_IO_der coll_IO_der2 ind_IO_der
-Datasets: ../data/art_data_128_128_128_7.bin ../data/art_data_256_256_256_7.bin
-Process counts: 1 2 4 8 16 32
-Iterations: 5
-Timeout: 600

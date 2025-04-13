@@ -747,9 +747,9 @@ def generate_all_visualizations(df, output_dir):
     """
     # Create output directories
     impl_dir = os.path.join(output_dir, "implementation_comparisons")
-    scaling_dir = os.path.join(output_dir, "scaling_analysis")
-    dataset_dir = os.path.join(output_dir, "dataset_comparisons")
-    combined_dir = os.path.join(output_dir, "combined_comparisons")
+    scaling_dir = os.path.join(output_dir, "scaling_individual")
+    dataset_dir = os.path.join(output_dir, "dataset_individual")
+    combined_dir = os.path.join(output_dir, "dataset_combined")
 
     os.makedirs(impl_dir, exist_ok=True)
     os.makedirs(scaling_dir, exist_ok=True)

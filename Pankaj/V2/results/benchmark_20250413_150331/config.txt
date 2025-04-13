@@ -1,0 +1,6 @@
+Timestamp: Sunday 13 April 2025 03:03:31 PM IST
+Implementations: send isend coll_IO_der bsend ind_IO_der ind_IO
+Datasets: ../data/data_64_64_96_7.bin ../data/data_64_64_64_3.bin
+Process counts: 8 16 32 64
+Iterations: 5
+Timeout: 600

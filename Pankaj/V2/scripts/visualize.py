@@ -304,6 +304,146 @@ def plot_scaling_analysis(df, implementation, dataset, output_dir):
     print(f"Saved: {output_file}")
     plt.close()
 
+def plot_scaling_analysis_combined(df, dataset, output_dir):
+    """
+    Generate a combined scaling plot comparing all implementations for a specific dataset
+    across different process counts.
+
+    Args:
+        df (DataFrame): The benchmark results
+        dataset (str): The dataset to analyze
+        output_dir (str): Directory to save the plot
+    """
+    # Filter data for the given dataset
+    filtered_df = df[df['dataset'] == dataset]
+
+    if filtered_df.empty:
+        print(f"No data found for dataset {dataset}")
+        return
+
+    # Get all unique implementations and process counts
+    implementations = sort_implementations(filtered_df['implementation'].unique())
+    process_counts = sorted(filtered_df['processes'].unique())
+
+    # Skip if we don't have multiple process counts
+    if len(process_counts) <= 1:
+        print(f"Insufficient process counts for scaling analysis with {dataset}")
+        return
+
+    # Extract problem dimensions for plot title
+    try:
+        first_row = filtered_df.iloc[0]
+        dims = f"{first_row['nx']}x{first_row['ny']}x{first_row['nz']}, {first_row['timesteps']} timesteps"
+    except:
+        dims = os.path.basename(dataset)
+
+    # Create figure with two subplots - execution time and speedup
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 10))
+
+    # Color palette with enough colors for all implementations
+    colors = plt.cm.viridis(np.linspace(0, 0.9, len(implementations)))
+    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'H', '+', 'x', 'd', '|']
+
+    # Dictionary to store baseline times (for speedup calculation)
+    baseline_times = {}
+
+    # Dictionary to store handles for the legend
+    handles = []
+
+    # Plot each implementation
+    for i, impl in enumerate(implementations):
+        impl_df = filtered_df[filtered_df['implementation'] == impl]
+
+        # Group by process count and compute mean times
+        impl_summary = impl_df.groupby('processes').agg({
+            'total_time': 'mean'
+        }).reset_index()
+
+        # Skip if this implementation doesn't have enough data points
+        if len(impl_summary) <= 1:
+            continue
+
+        # Sort by process count
+        impl_summary = impl_summary.sort_values('processes')
+
+        # Define color, marker and style for this implementation
+        color = colors[i]
+        marker = markers[i % len(markers)]
+
+        # Plot execution time
+        line, = ax1.plot(impl_summary['processes'], impl_summary['total_time'],
+                marker=marker, label=impl, color=color, linewidth=2, markersize=8)
+        handles.append(line)
+
+        # Store baseline time (time with minimum processes) for speedup calculation
+        if not impl_summary.empty:
+            baseline_times[impl] = impl_summary['total_time'].iloc[0]
+
+            # Calculate and plot speedup
+            speedup = baseline_times[impl] / impl_summary['total_time']
+            ax2.plot(impl_summary['processes'], speedup,
+                   marker=marker, label=impl, color=color, linewidth=2, markersize=8)
+
+    # Add ideal speedup line in the second plot
+    if process_counts:
+        ideal_x = np.array(process_counts)
+        ideal_y = ideal_x / ideal_x[0]
+        ax2.plot(ideal_x, ideal_y, 'k--', label='Ideal Speedup', linewidth=2)
+
+    # Style the execution time plot (ax1)
+    ax1.set_xlabel('Number of Processes', fontweight='bold', fontsize=12)
+    ax1.set_ylabel('Execution Time (seconds)', fontweight='bold', fontsize=12)
+    ax1.set_title(f'Strong Scaling: Execution Time Comparison\n({dims})', fontweight='bold', fontsize=14)
+
+    # Use log scale if appropriate
+    if len(process_counts) > 3:
+        try:
+            ax1.set_xscale('log', base=2)
+            ax1.set_yscale('log', base=10)
+        except:
+            # Fallback to linear scale if log scale fails
+            pass
+
+    ax1.grid(True, which="both", ls="-", alpha=0.2)
+
+    # Style the speedup plot (ax2)
+    ax2.set_xlabel('Number of Processes', fontweight='bold', fontsize=12)
+    ax2.set_ylabel('Speedup', fontweight='bold', fontsize=12)
+    ax2.set_title(f'Strong Scaling: Speedup Comparison\n({dims})', fontweight='bold', fontsize=14)
+
+    if len(process_counts) > 3:
+        try:
+            ax2.set_xscale('log', base=2)
+        except:
+            pass
+
+    ax2.grid(True, which="both", ls="-", alpha=0.2)
+
+    # Create a shared legend for both plots
+    # Place the legend outside the plot area
+    lgd = fig.legend(handles, implementations,
+                    loc='lower center',
+                    bbox_to_anchor=(0.5, -0.12),
+                    ncol=min(5, len(implementations)),
+                    fontsize=10,
+                    framealpha=0.9)
+
+    # Add dataset name as suptitle
+    plt.suptitle(f'Scaling Analysis for Dataset: {os.path.basename(dataset)}',
+                fontsize=16, fontweight='bold')
+
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.2, top=0.85)  # Adjust for the legend and suptitle
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save the figure
+    output_file = os.path.join(output_dir, f"scaling_combined_{os.path.basename(dataset)}.png")
+    plt.savefig(output_file, dpi=300, bbox_extra_artists=(lgd,), bbox_inches='tight')
+    print(f"Saved: {output_file}")
+    plt.close()
+
 def plot_dataset_comparison(df, implementation, processes, output_dir):
     """
     Generate bar chart comparing different datasets for a specific implementation and process count.
@@ -634,6 +774,14 @@ def generate_all_visualizations(df, output_dir):
         for dataset in datasets:
             print(f"Implementation: {implementation}, Dataset: {os.path.basename(dataset)}")
             plot_scaling_analysis(df, implementation, dataset, scaling_dir)
+
+    # Generate combined scaling analysis plots
+    print("\n=== Generating Combined Scaling Analysis Plots ===")
+    scaling_combined_dir = os.path.join(output_dir, "scaling_combined")
+    os.makedirs(scaling_combined_dir, exist_ok=True)
+    for dataset in datasets:
+        print(f"Dataset: {os.path.basename(dataset)}")
+        plot_scaling_analysis_combined(df, dataset, scaling_combined_dir)
 
     # Generate all dataset comparisons
     print("\n=== Generating Dataset Comparisons ===")

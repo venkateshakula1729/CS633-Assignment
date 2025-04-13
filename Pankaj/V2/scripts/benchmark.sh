@@ -5,9 +5,9 @@
 # ===================== CONFIGURATION =====================
 # Implementations to benchmark
 declare -A IMPLEMENTATIONS=(
-    ["send"]="../src/bin/pankaj_code7"
-    ["isend"]="../src/bin/pankaj_code11"
-    ["bsend"]="../src/bin/pankaj_code10"
+    ["send"]="../src/bin/send"
+    ["isend"]="../src/bin/isend"
+    ["bsend"]="../src/bin/bsend"
     ["ind_IO"]="../src/bin/independentIO"
     # ["coll_IO"]="../src/bin/collectiveIO"
     ["ind_IO_der"]="../src/bin/independentIO_derData"

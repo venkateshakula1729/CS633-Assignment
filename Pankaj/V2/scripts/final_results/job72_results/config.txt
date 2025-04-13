@@ -1,0 +1,6 @@
+Timestamp: Sun Apr 13 16:42:06 IST 2025
+Implementations: ind_IO+isend ind_IO_der isend
+Datasets: ../data/data_64_64_64_3.bin
+Process counts: 64
+Iterations: 5
+Timeout: 600

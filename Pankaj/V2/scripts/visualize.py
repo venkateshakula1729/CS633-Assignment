@@ -427,6 +427,176 @@ def plot_dataset_comparison(df, implementation, processes, output_dir):
     print(f"Saved: {output_file}")
     plt.close()
 
+def plot_dataset_comparison_combined(df, processes, output_dir):
+    """
+    Generate a combined bar chart that compares all implementations across different datasets
+    for a specific process count. For each dataset, implementations are grouped together.
+
+    This version uses:
+    - Only total time (no read/main time separation)
+    - Different colors for each implementation
+    - Horizontal text labels
+
+    Args:
+        df (DataFrame): The benchmark results
+        processes (int): The process count to analyze
+        output_dir (str): Directory to save the plot
+    """
+    # Filter data for the given process count
+    filtered_df = df[df['processes'] == processes]
+
+    if filtered_df.empty:
+        print(f"No data found for {processes} processes")
+        return
+
+    # Get unique datasets and implementations
+    datasets = filtered_df['dataset'].unique()
+    implementations = sort_implementations(filtered_df['implementation'].unique())
+
+    if len(datasets) <= 1 or len(implementations) <= 1:
+        print(f"Not enough datasets or implementations for combined comparison")
+        return
+
+    # Create a multi-index DataFrame
+    comparison_data = []
+    for dataset in datasets:
+        for impl in implementations:
+            subset = filtered_df[(filtered_df['dataset'] == dataset) &
+                                 (filtered_df['implementation'] == impl)]
+            if not subset.empty:
+                comparison_data.append({
+                    'dataset': dataset,
+                    'implementation': impl,
+                    'total_time': subset['total_time'].mean(),  # Use total_time directly
+                    'nx': subset['nx'].iloc[0],
+                    'ny': subset['ny'].iloc[0],
+                    'nz': subset['nz'].iloc[0],
+                    'timesteps': subset['timesteps'].iloc[0]
+                })
+
+    # Convert to DataFrame
+    comp_df = pd.DataFrame(comparison_data)
+
+    # Create figure
+    fig_width = max(12, len(datasets) * 2 * len(implementations) / 4)
+    fig, ax = plt.subplots(figsize=(fig_width, 10))
+
+    # Prepare for plotting
+    bar_width = 0.7 / len(implementations)  # Width of each bar, adjusted for number of implementations
+    group_spacing = 0.3  # Spacing between dataset groups
+
+    # Create color palette with enough distinct colors
+    color_palette = sns.color_palette("muted", len(implementations))
+
+    # Track best implementation for each dataset
+    best_implementations = {}
+
+    # Create dataset labels with dimensions
+    dataset_labels = []
+    for dataset in datasets:
+        dataset_df = comp_df[comp_df['dataset'] == dataset].iloc[0]
+        base_name = os.path.basename(dataset)
+        dim_label = f"{base_name}\n({dataset_df['nx']}x{dataset_df['ny']}x{dataset_df['nz']}, {dataset_df['timesteps']} ts)"
+        dataset_labels.append(dim_label)
+
+        # Find best implementation for this dataset
+        best_impl_row = comp_df[comp_df['dataset'] == dataset].loc[comp_df[comp_df['dataset'] == dataset]['total_time'].idxmin()]
+        best_implementations[dataset] = {
+            'implementation': best_impl_row['implementation'],
+            'time': best_impl_row['total_time']
+        }
+
+    # Plot bars for each dataset and implementation
+    dataset_positions = []  # Center positions for dataset labels
+    legend_handles = []
+
+    for i, dataset in enumerate(datasets):
+        group_start = i * (len(implementations) * bar_width + group_spacing)
+        dataset_positions.append(group_start + (len(implementations) * bar_width) / 2)
+
+        for j, impl in enumerate(implementations):
+            subset = comp_df[(comp_df['dataset'] == dataset) & (comp_df['implementation'] == impl)]
+            if not subset.empty:
+                x_pos = group_start + j * bar_width
+                total_time = subset['total_time'].iloc[0]
+
+                # Use color based on implementation
+                color_idx = implementations.index(impl)
+                bar = ax.bar(x_pos, total_time, width=bar_width,
+                            color=color_palette[color_idx],
+                            edgecolor='grey')
+
+                # Add to legend only once
+                if i == 0:
+                    legend_handles.append((bar[0], impl))
+
+                # Add data value labels
+                if total_time > 0:
+                    # Total time - positioned slightly above the bar with background
+                    # Create a text box with background for the total time
+                    bbox_props = dict(
+                        boxstyle="round,pad=0.3",
+                        fc="lightyellow",
+                        ec="gray",
+                        lw=1,
+                        alpha=0.8
+                    )
+
+                    label_y = total_time + (max(comp_df['total_time']) * 0.02)
+                    ax.text(
+                        x_pos, label_y,
+                        format_time(total_time),
+                        ha='center',
+                        va='bottom',
+                        fontsize=10,
+                        fontweight='bold',
+                        color='black',
+                        bbox=bbox_props
+                    )
+
+
+                # Mark if this is the best implementation for this dataset
+                if impl == best_implementations[dataset]['implementation']:
+                    label_y = total_time + (max(comp_df['total_time']) * 0.05)
+                    ax.text(x_pos, label_y, "★",
+                           ha='center', va='bottom', fontweight='bold', color='red',
+                           fontsize=16)
+
+    # Add dataset separators (vertical lines between dataset groups)
+    for i in range(1, len(datasets)):
+        pos = i * (len(implementations) * bar_width + group_spacing) - group_spacing/2
+        ax.axvline(x=pos, color='gray', linestyle='--', alpha=0.3)
+
+    # Style the plot
+    ax.set_xticks(dataset_positions)
+    ax.set_xticklabels(dataset_labels, fontsize=10)
+
+    # Add a legend with implementation colors
+    legend_items = [handle for handle, _ in legend_handles]
+    legend_labels = [label for _, label in legend_handles]
+    ax.legend(legend_items, legend_labels, loc='upper right', framealpha=0.9, ncol=min(3, len(implementations)))
+
+    # Set y-axis with some padding
+    ax.set_ylim(0, max(comp_df['total_time']) * 1.25)
+
+    # Add grid lines and labels
+    ax.grid(True, axis='y', linestyle='--', alpha=0.3)
+    ax.set_ylabel('Total Time (seconds)', fontweight='bold', fontsize=12)
+    ax.set_title(f'Implementation Comparison Across Datasets\n{processes} Processes',
+                fontweight='bold', fontsize=14, pad=20)
+
+    # Add tight layout
+    plt.tight_layout()
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save the figure
+    output_file = os.path.join(output_dir, f"dataset_implementation_comparison_{processes}p.png")
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    print(f"Saved: {output_file}")
+    plt.close()
+
 def generate_all_visualizations(df, output_dir):
     """
     Generate all possible visualization combinations.
@@ -439,10 +609,12 @@ def generate_all_visualizations(df, output_dir):
     impl_dir = os.path.join(output_dir, "implementation_comparisons")
     scaling_dir = os.path.join(output_dir, "scaling_analysis")
     dataset_dir = os.path.join(output_dir, "dataset_comparisons")
+    combined_dir = os.path.join(output_dir, "combined_comparisons")
 
     os.makedirs(impl_dir, exist_ok=True)
     os.makedirs(scaling_dir, exist_ok=True)
     os.makedirs(dataset_dir, exist_ok=True)
+    os.makedirs(combined_dir, exist_ok=True)
 
     # Get unique values
     datasets = df['dataset'].unique()
@@ -469,6 +641,12 @@ def generate_all_visualizations(df, output_dir):
         for processes in process_counts:
             print(f"Implementation: {implementation}, Processes: {processes}")
             plot_dataset_comparison(df, implementation, processes, dataset_dir)
+
+    # Generate combined dataset-implementation comparisons
+    print("\n=== Generating Combined Dataset-Implementation Comparisons ===")
+    for processes in process_counts:
+        print(f"Processes: {processes}")
+        plot_dataset_comparison_combined(df, processes, combined_dir)
 
     print(f"\nAll visualizations saved to {output_dir}")
 
